@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/brand_logo.dart';
-import '../../../shared/widgets/feature_placeholder.dart';
 import '../../account/presentation/account_tab.dart';
+import 'delivery_queue_screen.dart';
 
 /// Coquille de l'espace livreur : file des livraisons, compte.
 class DeliveryShell extends StatefulWidget {
@@ -16,11 +16,7 @@ class _DeliveryShellState extends State<DeliveryShell> {
   int _index = 0;
 
   static const _tabs = <Widget>[
-    FeaturePlaceholder(
-      title: 'Livraisons',
-      icon: Icons.local_shipping_outlined,
-      subtitle: 'Livraisons disponibles et prises en charge',
-    ),
+    DeliveryQueueScreen(),
     AccountTab(),
   ];
 

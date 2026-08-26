@@ -102,6 +102,7 @@ class OrderSummary {
     required this.reference,
     required this.status,
     required this.total,
+    this.id,
     this.commune,
     this.paymentStatus,
     this.customerName,
@@ -113,6 +114,7 @@ class OrderSummary {
     this.items = const [],
   });
 
+  final int? id;
   final String reference;
   final OrderStatus status;
   final int total;
@@ -127,6 +129,7 @@ class OrderSummary {
   final List<OrderItem> items;
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) => OrderSummary(
+        id: asIntOrNull(json['id']),
         reference: asString(json['reference']),
         status: OrderStatus.parse(asStringOrNull(json['status'])),
         total: asInt(json['total']),

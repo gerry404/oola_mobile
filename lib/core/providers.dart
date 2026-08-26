@@ -3,12 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'auth/biometric_service.dart';
 import 'network/dio_client.dart';
+import 'storage/local_store.dart';
 import 'storage/secure_store.dart';
 
 /// Providers d'infrastructure partages par toute l'application.
 
 final secureStoreProvider = Provider<SecureStore>((ref) {
   return SecureStore(buildSecureStorage());
+});
+
+/// Stockage local (Hive). Injecte depuis main() via un override, car l'ouverture
+/// de la box est asynchrone.
+final localStoreProvider = Provider<LocalStore>((ref) {
+  throw UnimplementedError('localStoreProvider doit etre override dans main()');
 });
 
 final biometricProvider = Provider<BiometricService>((ref) {

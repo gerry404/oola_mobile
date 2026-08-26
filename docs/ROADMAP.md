@@ -14,25 +14,26 @@ phases du document.
 - [x] Services biometrie et anti-capture (a brancher aux ecrans).
 - [x] Config native Android/iOS (permissions, FlutterFragmentActivity, Face ID).
 
-## Phase 2 — Fonctionnalites + connexion API
+## Phase 2 — Fonctionnalites + connexion API (fait)
 
-- [ ] Feed video vertical (autoplay/pause au scroll, son coupe par defaut).
-- [ ] Fiche produit : video, prix, stock, variantes, avis, questions.
-- [ ] Recherche + filtres par categorie ; boutiques.
-- [ ] Panier, favoris, partage.
-- [ ] Commande : adresse, frais de livraison par zone, code promo.
-- [ ] Suivi de commande + code de confirmation a la reception.
-- [ ] Compte : profil, adresses, historique, notifications.
-- [ ] Vendeur : dashboard, ajout produit (video + poster), boutique, documents.
-- [ ] Vendeur : portefeuille (recharge Mobile Money, retraits), commandes, sponsoring, ventes flash, coupons.
-- [ ] Livreur : file, prise en charge, confirmation par code.
+- [x] Feed video vertical (autoplay/pause au scroll, son coupe par defaut).
+- [x] Fiche produit : video, prix, stock, variantes, avis, questions.
+- [x] Recherche + filtres par categorie.
+- [x] Panier, favoris, partage.
+- [x] Commande : coordonnees, frais de livraison par zone, code promo.
+- [x] Suivi de commande + code de confirmation a la reception.
+- [x] Compte : profil, adresses, historique, notifications.
+- [x] Vendeur : dashboard, ajout produit (video galerie ou lien externe).
+- [x] Vendeur : portefeuille (recharge Mobile Money, retraits), commandes (marquer prete).
+- [x] Livreur : file, prise en charge, confirmation par code.
+- [ ] Reste : ecriture d'avis/questions, ventes flash & coupons vendeur, sponsoring, boutique/documents vendeur.
 
 ## Phase 3 — Securite, paiement, video
 
-- [ ] Activation biometrie apres 1re connexion + re-verif operations sensibles.
-- [ ] Anti-capture sur paiement / portefeuille / code de livraison.
-- [ ] Paiement Mobile Money (retour dans l'app + mise a jour du statut).
-- [ ] Compression video sur l'appareil + poster auto.
+- [x] Verrou biometrique a l'ouverture + re-verif operations sensibles (paiement, retrait, mot de passe, suppression).
+- [x] Anti-capture sur suivi de commande (code) et portefeuille vendeur.
+- [x] Paiement Mobile Money (ouverture page de paiement + suivi du statut).
+- [ ] Compression video sur l'appareil + poster auto (upload direct en place).
 
 ## Phase 4 — Notifications et finitions
 

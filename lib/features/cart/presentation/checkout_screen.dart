@@ -10,6 +10,7 @@ import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/async_view.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../orders/application/orders_providers.dart';
+import '../../security/biometric_gate.dart';
 import '../../orders/presentation/order_tracking_screen.dart';
 import '../application/cart_controller.dart';
 
@@ -73,6 +74,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (lines.isEmpty) {
       showToast(context, 'Votre panier est vide');
       return;
+    }
+
+    // Operation sensible (§3.2) : verification biometrique avant paiement.
+    if (_payment == 'mobile_money') {
+      final ok = await ref
+          .read(biometricGateProvider)
+          .require(context, reason: 'Confirmez pour payer');
+      if (!ok) return;
     }
 
     setState(() => _busy = true);

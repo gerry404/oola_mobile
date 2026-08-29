@@ -24,7 +24,7 @@ android {
         applicationId = "com.oolashop.oola_mobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion // requis par local_auth (biometrie)
+        minSdk = 23 // requis par local_auth (biometrie)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

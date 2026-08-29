@@ -34,7 +34,8 @@ dependencies:
 
   # Securite
   local_auth: ^2.3.0
-  screen_protector: ^1.4.2
+  # Anti-capture d'ecran : implemente en natif (FLAG_SECURE Android) via
+  # MethodChannel, sans dependance plugin (voir core/security/secure_screen.dart).
 
   # Video
   video_player: ^2.9.2

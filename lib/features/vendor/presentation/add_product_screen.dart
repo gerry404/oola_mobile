@@ -22,7 +22,6 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
   final _description = TextEditingController();
   final _price = TextEditingController();
   final _stock = TextEditingController(text: '1');
-  final _externalUrl = TextEditingController();
 
   int? _categoryId;
   String _condition = 'new';
@@ -36,7 +35,6 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
     _description.dispose();
     _price.dispose();
     _stock.dispose();
-    _externalUrl.dispose();
     super.dispose();
   }
 
@@ -48,8 +46,8 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_video == null && _externalUrl.text.trim().isEmpty) {
-      showToast(context, 'Ajoutez une video (fichier ou lien).');
+    if (_video == null) {
+      showToast(context, 'Ajoutez une video du produit.');
       return;
     }
 
@@ -67,11 +65,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
       });
 
       setState(() => _step = 'Envoi de la video...');
-      if (_video != null) {
-        await repo.uploadVideo(id, _video!.path);
-      } else {
-        await repo.uploadVideoUrl(id, _externalUrl.text.trim());
-      }
+      await repo.uploadVideo(id, _video!.path);
 
       setState(() => _step = 'Envoi a la validation...');
       await repo.submitProduct(id);
@@ -191,15 +185,6 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
                 video: _video,
                 onPick: _pickVideo,
                 onClear: () => setState(() => _video = null),
-              ),
-              const SizedBox(height: 8),
-              const Text('Ou collez un lien video (TikTok, YouTube, Instagram)',
-                  style: TextStyle(fontSize: 12, color: AppColors.inkSoft)),
-              const SizedBox(height: 6),
-              TextFormField(
-                controller: _externalUrl,
-                enabled: _video == null,
-                decoration: const InputDecoration(labelText: 'Lien video'),
               ),
               const SizedBox(height: 24),
               ElevatedButton(

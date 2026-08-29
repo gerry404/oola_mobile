@@ -51,15 +51,6 @@ class VendorRepository {
     }
   }
 
-  /// Associe une video externe (TikTok / YouTube / Instagram).
-  Future<void> uploadVideoUrl(int id, String url) async {
-    try {
-      await _dio.post('/vendor/products/$id/video', data: {'external_url': url});
-    } on DioException catch (e) {
-      throw ApiException.fromDio(e);
-    }
-  }
-
   /// Soumet un produit a validation (etape finale).
   Future<void> submitProduct(int id) async {
     try {

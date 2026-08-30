@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../navigation/app_transitions.dart';
 import 'app_colors.dart';
 
 /// Theme clair OOLAshop. Flat, coins arrondis, orange de marque.
@@ -28,6 +29,7 @@ abstract final class AppTheme {
     );
 
     return base.copyWith(
+      pageTransitionsTheme: AppTransitions.pageTransitionsTheme,
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.white,
         foregroundColor: AppColors.ink,

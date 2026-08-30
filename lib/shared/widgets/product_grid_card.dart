@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/navigation/app_transitions.dart';
 import '../../app/theme/app_colors.dart';
 import '../../features/catalog/presentation/product_screen.dart';
 import '../models/product_card.dart';
@@ -15,7 +16,7 @@ class ProductGridCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ProductScreen(slug: product.slug)),
+        AppTransitions.modalRoute(ProductScreen(slug: product.slug)),
       ),
       child: Container(
         decoration: BoxDecoration(

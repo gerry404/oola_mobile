@@ -2,17 +2,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/providers.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/client/presentation/client_shell.dart';
 import '../features/delivery/presentation/delivery_shell.dart';
+import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/vendor/presentation/vendor_shell.dart';
 import '../shared/models/user.dart';
 
 /// Chemins de navigation.
 abstract final class Routes {
   static const splash = '/splash';
+  static const onboarding = '/onboarding';
   static const login = '/login';
   static const clientHome = '/home';
   static const vendorHome = '/vendor';
@@ -67,9 +70,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       final loggedIn = auth.isAuthenticated;
-      final onAuthScreen = loc == Routes.login || loc == Routes.splash;
+      final onAuthScreen =
+          loc == Routes.login || loc == Routes.splash || loc == Routes.onboarding;
 
       if (!loggedIn) {
+        // Premier lancement : onboarding avant le login.
+        final onboardingSeen = ref.read(localStoreProvider).onboardingSeen;
+        if (!onboardingSeen) {
+          return loc == Routes.onboarding ? null : Routes.onboarding;
+        }
         return loc == Routes.login ? null : Routes.login;
       }
 
@@ -80,6 +89,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: Routes.splash, builder: (_, __) => const SplashScreen()),
+      GoRoute(
+        path: Routes.onboarding,
+        builder: (context, __) =>
+            OnboardingScreen(onDone: () => context.go(Routes.login)),
+      ),
       GoRoute(path: Routes.login, builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: Routes.clientHome,

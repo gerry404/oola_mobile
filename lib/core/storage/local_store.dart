@@ -50,4 +50,11 @@ class LocalStore {
       _box.put(key, jsonEncode(value));
 
   Future<void> delete(String key) => _box.delete(key);
+
+  // ----- Onboarding (1er lancement) -----
+  static const _kOnboardingSeen = 'onboarding_seen';
+
+  bool get onboardingSeen => _box.get(_kOnboardingSeen) == true;
+
+  Future<void> markOnboardingSeen() => _box.put(_kOnboardingSeen, true);
 }

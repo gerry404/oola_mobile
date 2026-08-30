@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/navigation/app_transitions.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/async_view.dart';
@@ -201,7 +202,7 @@ class _Summary extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+                  AppTransitions.modalRoute(const CheckoutScreen()),
                 ),
                 child: const Text('Passer la commande'),
               ),

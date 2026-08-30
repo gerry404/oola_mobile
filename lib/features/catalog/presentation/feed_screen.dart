@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/navigation/app_transitions.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../shared/models/product_card.dart';
 import '../../../shared/widgets/async_view.dart';
@@ -90,7 +91,7 @@ class _FeedItem extends ConsumerWidget {
 
     void openProduct() {
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => ProductScreen(slug: product.slug)),
+        AppTransitions.modalRoute(ProductScreen(slug: product.slug)),
       );
     }
 

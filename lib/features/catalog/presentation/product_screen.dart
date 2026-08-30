@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../app/navigation/app_transitions.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../core/config/env.dart';
 import '../../../shared/models/product_detail.dart';
@@ -70,7 +71,7 @@ class _ProductScreenState extends ConsumerState<ProductScreen> {
     ref.read(cartControllerProvider.notifier).add(_line(p));
     if (buyNow) {
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+        AppTransitions.modalRoute(const CheckoutScreen()),
       );
     } else {
       showToast(context, 'Ajoute au panier', success: true);

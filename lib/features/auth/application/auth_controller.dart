@@ -10,6 +10,15 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
 
+/// Resultat de l'etape OTP acheteur.
+enum ClientLoginOutcome {
+  /// Session ouverte (compte acheteur simple).
+  authenticated,
+
+  /// Compte privilegie : le mot de passe est requis en plus de l'OTP.
+  passwordRequired,
+}
+
 class AuthState {
   const AuthState({required this.status, this.user});
 
@@ -67,17 +76,38 @@ class AuthController extends Notifier<AuthState> {
   Future<void> requestClientCode(String email) =>
       _repo.clientLoginStart(email: email);
 
-  /// Connexion acheteur. Etape 2 : verification du code et ouverture de session.
-  Future<void> clientLogin({
+  /// Connexion acheteur. Etape 2 : verification du code.
+  ///
+  /// Securite : si le compte est privilegie (vendeur / admin / livreur), l'OTP
+  /// seul ne suffit pas -> on renvoie [ClientLoginOutcome.passwordRequired] et
+  /// on n'ouvre PAS la session tant que le mot de passe n'est pas fourni.
+  Future<ClientLoginOutcome> clientLogin({
     required String email,
     required String code,
   }) async {
     final store = ref.read(secureStoreProvider);
     final res = await _repo.clientLogin(email: email, code: code);
+
+    final role = res.user.role;
+    final privileged = role.isVendor || role.isAdmin || role.isDelivery;
+    if (privileged) {
+      // On ne conserve pas le token OTP : il faudra le mot de passe pour ouvrir.
+      return ClientLoginOutcome.passwordRequired;
+    }
+
     await store.writeToken(res.token);
     await store.writeLastEmail(email);
     state = AuthState(status: AuthStatus.authenticated, user: res.user);
+    return ClientLoginOutcome.authenticated;
   }
+
+  /// Finalise la connexion d'un compte privilegie apres l'OTP : verifie le
+  /// mot de passe (double facteur) puis ouvre la session.
+  Future<void> completePrivilegedLogin({
+    required String email,
+    required String password,
+  }) =>
+      login(identifier: email, password: password);
 
   /// Connexion vendeur / livreur / admin (email ou telephone + mot de passe).
   Future<void> login({

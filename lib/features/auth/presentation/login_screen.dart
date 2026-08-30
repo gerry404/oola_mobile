@@ -5,13 +5,14 @@ import '../../../app/theme/app_colors.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../shared/widgets/brand_logo.dart';
 import '../application/auth_controller.dart';
+import 'widgets/otp_input.dart';
 
-/// Connexion. Deux modes :
-///  - Acheteur : identifiant (tel/email) + code recu par message (OTP).
-///  - Espace pro (vendeur / livreur / admin) : email + mot de passe.
-///
-/// L'activation de la biometrie se fera apres la premiere connexion reussie
-/// (cahier des charges section 3), depuis les reglages du compte.
+/// Etapes du parcours de connexion acheteur.
+enum _ClientStep { email, otp, password }
+
+/// Connexion.
+///  - Acheteur : email -> code OTP -> (mot de passe si compte privilegie).
+///  - Espace pro (vendeur / livreur / admin) : email ou telephone + mot de passe.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -20,22 +21,23 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  bool _staffMode = false; // false = acheteur (OTP), true = espace pro
-  bool _codeSent = false;
+  bool _staffMode = false;
+  _ClientStep _step = _ClientStep.email;
   bool _busy = false;
   String? _error;
+  String _otp = '';
 
-  final _identifier = TextEditingController();
-  final _code = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _staffId = TextEditingController();
+  final _staffPassword = TextEditingController();
 
   @override
   void dispose() {
-    _identifier.dispose();
-    _code.dispose();
     _email.dispose();
     _password.dispose();
+    _staffId.dispose();
+    _staffPassword.dispose();
     super.dispose();
   }
 
@@ -55,28 +57,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  // ---- Acheteur ----
   Future<void> _requestCode() => _run(() async {
-        final id = _identifier.text.trim();
-        if (id.isEmpty) {
+        final email = _email.text.trim();
+        if (email.isEmpty) {
           setState(() => _error = 'Entrez votre adresse email.');
           return;
         }
-        await ref.read(authControllerProvider.notifier).requestClientCode(id);
-        if (mounted) setState(() => _codeSent = true);
+        await ref.read(authControllerProvider.notifier).requestClientCode(email);
+        if (mounted) setState(() => _step = _ClientStep.otp);
       });
 
-  Future<void> _clientLogin() => _run(() async {
-        await ref.read(authControllerProvider.notifier).clientLogin(
-              email: _identifier.text.trim(),
-              code: _code.text.trim(),
-            );
+  Future<void> _verifyOtp(String code) => _run(() async {
+        final outcome = await ref
+            .read(authControllerProvider.notifier)
+            .clientLogin(email: _email.text.trim(), code: code);
+        // Compte privilegie : on demande le mot de passe (double facteur).
+        if (outcome == ClientLoginOutcome.passwordRequired && mounted) {
+          setState(() => _step = _ClientStep.password);
+        }
       });
 
-  Future<void> _staffLogin() => _run(() async {
-        await ref.read(authControllerProvider.notifier).login(
-              identifier: _email.text.trim(),
+  Future<void> _completePrivileged() => _run(() async {
+        await ref.read(authControllerProvider.notifier).completePrivilegedLogin(
+              email: _email.text.trim(),
               password: _password.text,
             );
+      });
+
+  // ---- Pro ----
+  Future<void> _staffLogin() => _run(() async {
+        await ref.read(authControllerProvider.notifier).login(
+              identifier: _staffId.text.trim(),
+              password: _staffPassword.text,
+            );
+      });
+
+  void _resetClient() => setState(() {
+        _step = _ClientStep.email;
+        _otp = '';
+        _password.clear();
+        _error = null;
       });
 
   @override
@@ -94,7 +115,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Center(child: BrandLogo(size: 72)),
                   const SizedBox(height: 28),
                   Text(
-                    _staffMode ? 'Espace professionnel' : 'Bienvenue',
+                    _title(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 24,
@@ -104,30 +125,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _staffMode
-                        ? 'Connectez-vous avec votre email et mot de passe.'
-                        : 'Connectez-vous pour commander en toute simplicite.',
+                    _subtitle(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: AppColors.inkSoft),
                   ),
                   const SizedBox(height: 28),
                   if (_error != null) _ErrorBanner(message: _error!),
-                  if (_staffMode) ..._staffForm() else ..._clientForm(),
-                  const SizedBox(height: 20),
-                  TextButton(
-                    onPressed: _busy
-                        ? null
-                        : () => setState(() {
-                              _staffMode = !_staffMode;
-                              _error = null;
-                              _codeSent = false;
-                            }),
-                    child: Text(
-                      _staffMode
-                          ? 'Je suis un acheteur'
-                          : 'Espace vendeur / livreur',
+                  // Animation douce entre les etapes.
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween(
+                          begin: const Offset(0.06, 0),
+                          end: Offset.zero,
+                        ).animate(anim),
+                        child: child,
+                      ),
+                    ),
+                    child: Column(
+                      key: ValueKey('${_staffMode}_$_step'),
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _staffMode ? _staffForm() : _clientForm(),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  if (!(_staffMode == false && _step != _ClientStep.email))
+                    TextButton(
+                      onPressed: _busy
+                          ? null
+                          : () => setState(() {
+                                _staffMode = !_staffMode;
+                                _resetClient();
+                              }),
+                      child: Text(
+                        _staffMode
+                            ? 'Je suis un acheteur'
+                            : 'Espace vendeur / livreur',
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -137,59 +174,136 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  String _title() {
+    if (_staffMode) return 'Espace professionnel';
+    return switch (_step) {
+      _ClientStep.email => 'Bienvenue',
+      _ClientStep.otp => 'Code de verification',
+      _ClientStep.password => 'Verification requise',
+    };
+  }
+
+  String _subtitle() {
+    if (_staffMode) {
+      return 'Connectez-vous avec votre email et mot de passe.';
+    }
+    return switch (_step) {
+      _ClientStep.email =>
+        'Connectez-vous pour commander en toute simplicite.',
+      _ClientStep.otp => 'Entrez le code envoye a ${_email.text.trim()}.',
+      _ClientStep.password =>
+        'Ce compte a des privileges : confirmez votre mot de passe.',
+    };
+  }
+
   List<Widget> _clientForm() {
-    return [
-      TextField(
-        controller: _identifier,
-        enabled: !_codeSent,
-        keyboardType: TextInputType.emailAddress,
-        autofillHints: const [AutofillHints.email],
-        decoration: const InputDecoration(
-          labelText: 'Adresse email',
-        ),
-      ),
-      if (_codeSent) ...[
-        const SizedBox(height: 12),
-        TextField(
-          controller: _code,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Code de verification'),
-        ),
-      ],
-      const SizedBox(height: 20),
-      ElevatedButton(
-        onPressed: _busy ? null : (_codeSent ? _clientLogin : _requestCode),
-        child: _busy
-            ? const _BtnSpinner()
-            : Text(_codeSent ? 'Se connecter' : 'Recevoir le code'),
-      ),
-      if (_codeSent)
-        TextButton(
-          onPressed: _busy ? null : _requestCode,
-          child: const Text('Renvoyer le code'),
-        ),
-    ];
+    switch (_step) {
+      case _ClientStep.email:
+        return [
+          TextField(
+            controller: _email,
+            keyboardType: TextInputType.emailAddress,
+            autofillHints: const [AutofillHints.email],
+            decoration: const InputDecoration(labelText: 'Adresse email'),
+            onSubmitted: (_) => _requestCode(),
+          ),
+          const SizedBox(height: 20),
+          _PrimaryButton(
+            busy: _busy,
+            label: 'Recevoir le code',
+            onPressed: _requestCode,
+          ),
+        ];
+
+      case _ClientStep.otp:
+        return [
+          OtpInput(
+            enabled: !_busy,
+            hasError: _error != null,
+            onChanged: (v) => _otp = v,
+            onCompleted: _verifyOtp,
+          ),
+          const SizedBox(height: 20),
+          _PrimaryButton(
+            busy: _busy,
+            label: 'Se connecter',
+            onPressed: () => _verifyOtp(_otp),
+          ),
+          TextButton(
+            onPressed: _busy ? null : _requestCode,
+            child: const Text('Renvoyer le code'),
+          ),
+          TextButton(
+            onPressed: _busy ? null : _resetClient,
+            child: const Text('Modifier l\'email'),
+          ),
+        ];
+
+      case _ClientStep.password:
+        return [
+          TextField(
+            controller: _password,
+            obscureText: true,
+            autofillHints: const [AutofillHints.password],
+            decoration: const InputDecoration(labelText: 'Mot de passe'),
+            onSubmitted: (_) => _completePrivileged(),
+          ),
+          const SizedBox(height: 20),
+          _PrimaryButton(
+            busy: _busy,
+            label: 'Confirmer',
+            onPressed: _completePrivileged,
+          ),
+        ];
+    }
   }
 
   List<Widget> _staffForm() {
     return [
       TextField(
-        controller: _email,
+        controller: _staffId,
         keyboardType: TextInputType.emailAddress,
+        autofillHints: const [AutofillHints.username],
         decoration: const InputDecoration(labelText: 'Email ou telephone'),
       ),
       const SizedBox(height: 12),
       TextField(
-        controller: _password,
+        controller: _staffPassword,
         obscureText: true,
+        autofillHints: const [AutofillHints.password],
         decoration: const InputDecoration(labelText: 'Mot de passe'),
+        onSubmitted: (_) => _staffLogin(),
       ),
       const SizedBox(height: 20),
-      ElevatedButton(
-        onPressed: _busy ? null : _staffLogin,
-        child: _busy ? const _BtnSpinner() : const Text('Se connecter'),
-      ),
+      _PrimaryButton(busy: _busy, label: 'Se connecter', onPressed: _staffLogin),
     ];
+  }
+}
+
+class _PrimaryButton extends StatelessWidget {
+  const _PrimaryButton({
+    required this.busy,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final bool busy;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: busy ? null : onPressed,
+      child: busy
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2.2, color: Colors.white),
+            )
+          : Text(label),
+    );
   }
 }
 
@@ -212,14 +326,4 @@ class _ErrorBanner extends StatelessWidget {
       ),
     );
   }
-}
-
-class _BtnSpinner extends StatelessWidget {
-  const _BtnSpinner();
-  @override
-  Widget build(BuildContext context) => const SizedBox(
-        height: 20,
-        width: 20,
-        child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
-      );
 }

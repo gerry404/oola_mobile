@@ -63,33 +63,31 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  /// Connexion acheteur (OTP). Etape 1 : demande du code.
-  Future<void> requestClientCode(String identifier) =>
-      _repo.clientLoginStart(identifier: identifier);
+  /// Connexion acheteur (OTP). Etape 1 : demande du code par email.
+  Future<void> requestClientCode(String email) =>
+      _repo.clientLoginStart(email: email);
 
-  /// Connexion acheteur. Etape 2 : verification et ouverture de session.
+  /// Connexion acheteur. Etape 2 : verification du code et ouverture de session.
   Future<void> clientLogin({
-    required String identifier,
+    required String email,
     required String code,
-    String? password,
   }) async {
     final store = ref.read(secureStoreProvider);
-    final res = await _repo.clientLogin(
-      identifier: identifier,
-      code: code,
-      password: password,
-    );
+    final res = await _repo.clientLogin(email: email, code: code);
     await store.writeToken(res.token);
-    await store.writeLastEmail(identifier);
+    await store.writeLastEmail(email);
     state = AuthState(status: AuthStatus.authenticated, user: res.user);
   }
 
-  /// Connexion vendeur / livreur / admin (email + mot de passe).
-  Future<void> login({required String email, required String password}) async {
+  /// Connexion vendeur / livreur / admin (email ou telephone + mot de passe).
+  Future<void> login({
+    required String identifier,
+    required String password,
+  }) async {
     final store = ref.read(secureStoreProvider);
-    final res = await _repo.login(email: email, password: password);
+    final res = await _repo.login(identifier: identifier, password: password);
     await store.writeToken(res.token);
-    await store.writeLastEmail(email);
+    await store.writeLastEmail(identifier);
     state = AuthState(status: AuthStatus.authenticated, user: res.user);
   }
 

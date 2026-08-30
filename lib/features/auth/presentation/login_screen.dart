@@ -58,7 +58,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _requestCode() => _run(() async {
         final id = _identifier.text.trim();
         if (id.isEmpty) {
-          setState(() => _error = 'Entrez votre numero ou email.');
+          setState(() => _error = 'Entrez votre adresse email.');
           return;
         }
         await ref.read(authControllerProvider.notifier).requestClientCode(id);
@@ -67,14 +67,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _clientLogin() => _run(() async {
         await ref.read(authControllerProvider.notifier).clientLogin(
-              identifier: _identifier.text.trim(),
+              email: _identifier.text.trim(),
               code: _code.text.trim(),
             );
       });
 
   Future<void> _staffLogin() => _run(() async {
         await ref.read(authControllerProvider.notifier).login(
-              email: _email.text.trim(),
+              identifier: _email.text.trim(),
               password: _password.text,
             );
       });
@@ -143,8 +143,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         controller: _identifier,
         enabled: !_codeSent,
         keyboardType: TextInputType.emailAddress,
+        autofillHints: const [AutofillHints.email],
         decoration: const InputDecoration(
-          labelText: 'Numero de telephone ou email',
+          labelText: 'Adresse email',
         ),
       ),
       if (_codeSent) ...[
@@ -175,7 +176,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       TextField(
         controller: _email,
         keyboardType: TextInputType.emailAddress,
-        decoration: const InputDecoration(labelText: 'Email'),
+        decoration: const InputDecoration(labelText: 'Email ou telephone'),
       ),
       const SizedBox(height: 12),
       TextField(

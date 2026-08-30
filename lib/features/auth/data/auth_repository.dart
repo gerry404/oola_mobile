@@ -12,31 +12,27 @@ class AuthRepository {
 
   final Dio _dio;
 
-  /// Demarre la connexion client : envoie un code OTP par SMS/email.
-  /// Le backend indique si le compte existe (login) ou non (inscription).
-  Future<void> clientLoginStart({required String identifier}) async {
+  /// Demarre la connexion client (acheteur) : envoie un code OTP par email.
+  /// Le backend attend le champ `email` (le flux client est base sur l'email).
+  Future<void> clientLoginStart({required String email}) async {
     try {
       await _dio.post('/auth/client/login-start', data: {
-        'identifier': identifier,
+        'email': email,
       });
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }
   }
 
-  /// Verifie l'OTP et connecte un compte existant. Renvoie (token, user).
+  /// Verifie l'OTP et connecte un compte client existant. Renvoie (token, user).
   Future<({String token, User user})> clientLogin({
-    required String identifier,
+    required String email,
     required String code,
-    String? password,
-    String? deviceId,
   }) async {
     try {
       final res = await _dio.post('/auth/client/login', data: {
-        'identifier': identifier,
-        if (code.isNotEmpty) 'code': code,
-        if (password != null) 'password': password,
-        if (deviceId != null) 'device_id': deviceId,
+        'email': email,
+        'code': code,
       });
       return _parseAuth(res.data);
     } on DioException catch (e) {
@@ -44,14 +40,15 @@ class AuthRepository {
     }
   }
 
-  /// Connexion generique (vendeur / livreur / admin) par email + mot de passe.
+  /// Connexion pro (vendeur / livreur / admin) : email OU telephone + mot de passe.
+  /// Le backend attend le champ `identifier` (email ou telephone).
   Future<({String token, User user})> login({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
     try {
       final res = await _dio.post('/auth/login', data: {
-        'email': email,
+        'identifier': identifier,
         'password': password,
       });
       return _parseAuth(res.data);

@@ -16,12 +16,14 @@ class VendorOrdersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Column(
         children: [
           Container(
             color: Colors.white,
             child: const TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               labelColor: AppColors.orange,
               unselectedLabelColor: AppColors.inkSoft,
               indicatorColor: AppColors.orange,
@@ -29,6 +31,7 @@ class VendorOrdersTab extends StatelessWidget {
                 Tab(text: 'A preparer'),
                 Tab(text: 'En livraison'),
                 Tab(text: 'Livrees'),
+                Tab(text: 'Annulees / Retours'),
               ],
             ),
           ),
@@ -38,6 +41,7 @@ class VendorOrdersTab extends StatelessWidget {
                 _OrdersList(group: 'preparing'),
                 _OrdersList(group: 'delivering'),
                 _OrdersList(group: 'delivered'),
+                _OrdersList(group: 'cancelled'),
               ],
             ),
           ),
@@ -110,6 +114,11 @@ class _VendorOrderCardState extends ConsumerState<_VendorOrderCard> {
     }
   }
 
+  bool get _isTerminalBad =>
+      widget.order.status == OrderStatus.cancelled ||
+      widget.order.status == OrderStatus.refunded ||
+      widget.order.status == OrderStatus.disputed;
+
   @override
   Widget build(BuildContext context) {
     final o = widget.order;
@@ -127,6 +136,8 @@ class _VendorOrderCardState extends ConsumerState<_VendorOrderCard> {
             children: [
               Text('#${o.reference}',
                   style: const TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(width: 8),
+              if (_isTerminalBad) _StatusChip(status: o.status),
               const Spacer(),
               Text(formatCFA(o.totalForShop ?? o.total),
                   style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -158,6 +169,31 @@ class _VendorOrderCardState extends ConsumerState<_VendorOrderCard> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+  final OrderStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (status) {
+      OrderStatus.refunded => AppColors.warning,
+      OrderStatus.disputed => AppColors.danger,
+      _ => AppColors.inkSoft,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Text(
+        status.label,
+        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }

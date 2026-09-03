@@ -26,6 +26,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _busy = false;
   String? _error;
   String _otp = '';
+  bool _canBiometric = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Propose la connexion par empreinte si une session est memorisee.
+    Future.microtask(() async {
+      final ok =
+          await ref.read(authControllerProvider.notifier).canBiometricLogin();
+      if (mounted && ok) setState(() => _canBiometric = true);
+    });
+  }
 
   final _email = TextEditingController();
   final _password = TextEditingController();
@@ -85,6 +97,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             );
       });
 
+  // ---- Empreinte ----
+  Future<void> _biometricLogin() => _run(() async {
+        final ok =
+            await ref.read(authControllerProvider.notifier).biometricLogin();
+        if (!ok && mounted) {
+          setState(() => _error = 'Connexion biometrique impossible.');
+        }
+      });
+
+  Future<void> _useAnotherAccount() async {
+    await ref.read(authControllerProvider.notifier).logoutFull();
+    if (mounted) setState(() => _canBiometric = false);
+  }
+
   // ---- Pro ----
   Future<void> _staffLogin() => _run(() async {
         await ref.read(authControllerProvider.notifier).login(
@@ -131,6 +157,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 28),
                   if (_error != null) _ErrorBanner(message: _error!),
+                  if (_canBiometric) ...[
+                    _BiometricButton(busy: _busy, onTap: _biometricLogin),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _busy ? null : _useAnotherAccount,
+                      child: const Text('Utiliser un autre compte'),
+                    ),
+                    const _OrDivider(),
+                  ],
                   // Animation douce entre les etapes.
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 260),
@@ -303,6 +338,45 @@ class _PrimaryButton extends StatelessWidget {
                   strokeWidth: 2.2, color: Colors.white),
             )
           : Text(label),
+    );
+  }
+}
+
+class _BiometricButton extends StatelessWidget {
+  const _BiometricButton({required this.busy, required this.onTap});
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: busy ? null : onTap,
+      icon: const Icon(Icons.fingerprint, color: AppColors.orange, size: 26),
+      label: const Text('Se connecter avec l\'empreinte'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.ink,
+        side: const BorderSide(color: AppColors.orange, width: 1.4),
+      ),
+    );
+  }
+}
+
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: AppColors.gray200)),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: Text('ou', style: TextStyle(color: AppColors.inkSoft)),
+          ),
+          Expanded(child: Divider(color: AppColors.gray200)),
+        ],
+      ),
     );
   }
 }

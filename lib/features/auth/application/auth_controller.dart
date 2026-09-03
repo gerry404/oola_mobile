@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/auth/biometric_service.dart';
 import '../../../core/providers.dart';
 import '../../../shared/models/user.dart';
 import '../data/auth_repository.dart';
@@ -121,10 +122,65 @@ class AuthController extends Notifier<AuthState> {
     state = AuthState(status: AuthStatus.authenticated, user: res.user);
   }
 
+  /// Deconnexion.
+  ///
+  /// Si la biometrie est activee, on ne revoque PAS le token : on verrouille
+  /// simplement la session pour permettre une reconnexion rapide par empreinte
+  /// (modele "app bancaire"). Sinon, deconnexion complete.
   Future<void> logout() async {
+    final store = ref.read(secureStoreProvider);
+    if (await store.isBiometricEnabled()) {
+      state = const AuthState.signedOut();
+      return;
+    }
     await _repo.logout();
-    await ref.read(secureStoreProvider).clearToken();
+    await store.clearToken();
     state = const AuthState.signedOut();
+  }
+
+  /// Deconnexion complete : revoque le token, efface tout et desactive la
+  /// reconnexion biometrique ("utiliser un autre compte").
+  Future<void> logoutFull() async {
+    await _repo.logout();
+    final store = ref.read(secureStoreProvider);
+    await store.clearToken();
+    await store.setBiometricEnabled(false);
+    state = const AuthState.signedOut();
+  }
+
+  /// Une session memorisee est-elle deverrouillable par empreinte ?
+  /// (token present + biometrie activee et disponible sur l'appareil)
+  Future<bool> canBiometricLogin() async {
+    final store = ref.read(secureStoreProvider);
+    final token = await store.readToken();
+    if (token == null || token.isEmpty) return false;
+    if (!await store.isBiometricEnabled()) return false;
+    final bio = ref.read(biometricProvider);
+    return await bio.isAvailable && await bio.hasEnrolled;
+  }
+
+  /// Connexion par empreinte : deverrouille la session memorisee.
+  /// Renvoie true si la session est ouverte.
+  Future<bool> biometricLogin() async {
+    final store = ref.read(secureStoreProvider);
+    final token = await store.readToken();
+    if (token == null || token.isEmpty) return false;
+
+    final res = await ref
+        .read(biometricProvider)
+        .authenticate(reason: 'Connectez-vous a OOLAshop');
+    if (res != BiometricResult.success) return false;
+
+    try {
+      final user = await _repo.me();
+      state = AuthState(status: AuthStatus.authenticated, user: user);
+      return true;
+    } catch (_) {
+      // Token invalide/expire : on nettoie et on repasse au login classique.
+      await store.clearToken();
+      state = const AuthState.signedOut();
+      return false;
+    }
   }
 
   void _onSessionExpired() {

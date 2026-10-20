@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/themes/colors.dart';
+import '../../../core/themes/dimens.dart';
 
 /// Saisie OTP segmentee (une case par chiffre) : auto-avance, backspace,
 /// collage d'un code complet, et `autofillHints: oneTimeCode`.
@@ -30,14 +31,29 @@ class _OtpFieldState extends State<OtpField> {
       List.generate(widget.length, (_) => FocusNode());
 
   @override
+  void initState() {
+    super.initState();
+    // Le style de chaque case depend de son focus : on se redessine au
+    // changement de focus pour animer la case active.
+    for (final n in _nodes) {
+      n.addListener(_refresh);
+    }
+  }
+
+  @override
   void dispose() {
     for (final c in _controllers) {
       c.dispose();
     }
     for (final n in _nodes) {
+      n.removeListener(_refresh);
       n.dispose();
     }
     super.dispose();
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
   }
 
   String get _value => _controllers.map((c) => c.text).join();
@@ -49,6 +65,7 @@ class _OtpFieldState extends State<OtpField> {
       widget.onCompleted?.call(v);
       FocusScope.of(context).unfocus();
     }
+    _refresh();
   }
 
   void _distribute(String pasted, int start) {
@@ -91,16 +108,34 @@ class _OtpFieldState extends State<OtpField> {
   Widget build(BuildContext context) {
     return AutofillGroup(
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(widget.length, _box),
+        children: [
+          for (var i = 0; i < widget.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(child: _box(i)),
+          ],
+        ],
       ),
     );
   }
 
   Widget _box(int index) {
-    return SizedBox(
-      width: 48,
-      height: 56,
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final focused = _nodes[index].hasFocus;
+    final filled = _controllers[index].text.isNotEmpty;
+    final borderColor = focused
+        ? AppColors.orange
+        : (filled ? AppColors.orangeSoft : Colors.transparent);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      height: 60,
+      decoration: BoxDecoration(
+        color: filled
+            ? AppColors.orangeTint
+            : (dark ? AppColors.fieldFillDark : AppColors.fieldFill),
+        borderRadius: BorderRadius.circular(Dimens.radius),
+        border: Border.all(color: borderColor, width: focused ? 1.8 : 1.4),
+      ),
       child: Focus(
         onKeyEvent: (node, event) => _onKey(index, node, event),
         child: TextField(
@@ -111,8 +146,20 @@ class _OtpFieldState extends State<OtpField> {
           textAlign: TextAlign.center,
           maxLength: index == 0 ? widget.length : 1,
           autofillHints: index == 0 ? const [AutofillHints.oneTimeCode] : null,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-          decoration: const InputDecoration(counterText: ''),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: dark ? AppColors.white : AppColors.ink,
+          ),
+          cursorColor: AppColors.orange,
+          decoration: const InputDecoration(
+            counterText: '',
+            filled: false,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (v) => _onChanged(index, v),
           onTap: () => _controllers[index].selection =

@@ -5,6 +5,7 @@ import '../../../../utils/result.dart';
 import '../../../core/themes/colors.dart';
 import '../../../core/themes/dimens.dart';
 import '../../../core/ui/brand_logo.dart';
+import '../../../core/ui/password_field.dart';
 import '../../../core/ui/state_views.dart';
 import '../view_models/login_viewmodel.dart';
 import 'otp_field.dart';
@@ -218,12 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ];
       case _Step.password:
         return [
-          TextField(
-            controller: _password,
-            obscureText: true,
-            autofillHints: const [AutofillHints.password],
-            decoration: const InputDecoration(labelText: 'Mot de passe'),
-          ),
+          AppPasswordField(controller: _password),
           const SizedBox(height: 20),
           _submit(vm.completePassword, 'Confirmer',
               () => vm.completePassword
@@ -241,11 +237,9 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: const InputDecoration(labelText: 'Email ou telephone'),
       ),
       const SizedBox(height: 12),
-      TextField(
+      AppPasswordField(
         controller: _staffPassword,
-        obscureText: true,
-        autofillHints: const [AutofillHints.password],
-        decoration: const InputDecoration(labelText: 'Mot de passe'),
+        textInputAction: TextInputAction.done,
       ),
       const SizedBox(height: 20),
       _submit(vm.passwordLogin, 'Se connecter',

@@ -9,6 +9,12 @@ abstract final class Dimens {
   static const radius = 14.0;
   static const radiusLarge = 18.0;
 
+  /// Rayons dedies : boutons et champs bien arrondis, hauteur de contrôle
+  /// confortable pour le tactile.
+  static const radiusButton = 16.0;
+  static const radiusField = 16.0;
+  static const controlHeight = 54.0;
+
   double get paddingScreenHorizontal;
   double get paddingScreenVertical;
 

@@ -16,6 +16,14 @@ abstract final class AppColors {
   static const grey3 = Color(0xFFCFCACA);
   static const white = Color(0xFFFFFFFF);
 
+  /// Remplissage des champs de saisie (clair / sombre).
+  static const fieldFill = Color(0xFFF4F1F1);
+  static const fieldFillDark = Color(0xFF211F1F);
+
+  /// Teintes d'orange pre-calculees (evite .withOpacity au runtime).
+  static const orangeTint = Color(0x14FF6A00); // ~8 %
+  static const orangeSoft = Color(0x66FF6A00); // ~40 %
+
   static const lightColorScheme = ColorScheme(
     brightness: Brightness.light,
     primary: orange,

@@ -13,9 +13,14 @@ import 'otp_field.dart';
 enum _Step { email, otp, password }
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, required this.viewModel});
+  const LoginScreen({super.key, required this.viewModel, this.mode});
 
   final LoginViewModel viewModel;
+
+  /// Intention d'arrivee : 'register' (creation de compte), 'staff' (espace
+  /// pro) ou null (connexion). N'affecte que les textes : la verification par
+  /// code cree le compte s'il n'existe pas.
+  final String? mode;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -25,6 +30,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _staffMode = false;
   _Step _step = _Step.email;
   String _otp = '';
+
+  late bool _register = widget.mode == 'register';
 
   final _email = TextEditingController();
   final _password = TextEditingController();
@@ -36,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.mode == 'staff') _staffMode = true;
     vm.requestCode.addListener(_onRequestCode);
     vm.verifyOtp.addListener(_onVerifyOtp);
     vm.biometricLogin.addListener(_onBiometric);
@@ -170,18 +178,21 @@ class _LoginScreenState extends State<LoginScreen> {
   String _title() {
     if (_staffMode) return 'Espace professionnel';
     return switch (_step) {
-      _Step.email => 'Bienvenue',
-      _Step.otp => 'Code de verification',
-      _Step.password => 'Verification requise',
+      _Step.email => _register ? 'Créer ton compte' : 'Content de te revoir',
+      _Step.otp => 'Code de vérification',
+      _Step.password => 'Vérification requise',
     };
   }
 
   String _subtitle() {
     if (_staffMode) return 'Connectez-vous avec votre email et mot de passe.';
     return switch (_step) {
-      _Step.email => 'Connectez-vous pour commander en toute simplicite.',
-      _Step.otp => 'Entrez le code envoye a ${_email.text.trim()}.',
-      _Step.password => 'Ce compte a des privileges : confirmez votre mot de passe.',
+      _Step.email => _register
+          ? "Entre ton email : on t'envoie un code pour créer ton compte."
+          : 'Entre ton email pour recevoir ton code de connexion.',
+      _Step.otp => 'Entrez le code envoyé à ${_email.text.trim()}.',
+      _Step.password =>
+        'Ce compte a des privilèges : confirmez votre mot de passe.',
     };
   }
 
@@ -193,11 +204,19 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _email,
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => vm.requestCode.execute(_email.text.trim()),
             decoration: const InputDecoration(labelText: 'Adresse email'),
           ),
           const SizedBox(height: 20),
-          _submit(vm.requestCode, 'Recevoir le code',
+          _submit(vm.requestCode, _register ? 'Créer mon compte' : 'Recevoir le code',
               () => vm.requestCode.execute(_email.text.trim())),
+          TextButton(
+            onPressed: () => setState(() => _register = !_register),
+            child: Text(_register
+                ? "J'ai déjà un compte"
+                : 'Nouveau sur OOLA ? Créer un compte'),
+          ),
         ];
       case _Step.otp:
         return [

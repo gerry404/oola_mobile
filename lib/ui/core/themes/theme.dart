@@ -136,6 +136,17 @@ abstract final class AppTheme {
         showUnselectedLabels: true,
       ),
       dividerTheme: const DividerThemeData(color: AppColors.grey1, space: 1),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.ink,
+        contentTextStyle: const TextStyle(
+          color: AppColors.white,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 

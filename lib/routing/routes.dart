@@ -1,6 +1,7 @@
 /// Chemins de navigation.
 abstract final class Routes {
   static const home = '/';
+  static const welcome = '/welcome';
   static const login = '/login';
   static const onboarding = '/onboarding';
 

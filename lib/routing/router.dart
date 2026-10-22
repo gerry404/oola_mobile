@@ -15,6 +15,7 @@ import '../ui/account/widgets/security_screen.dart';
 import '../ui/auth/login/view_models/login_viewmodel.dart';
 import '../ui/auth/login/widgets/login_screen.dart';
 import '../ui/auth/onboarding/widgets/onboarding_screen.dart';
+import '../ui/auth/welcome/widgets/welcome_screen.dart';
 import '../ui/cart/widgets/cart_screen.dart';
 import '../ui/checkout/view_models/checkout_viewmodel.dart';
 import '../ui/checkout/widgets/checkout_screen.dart';
@@ -40,14 +41,20 @@ GoRouter appRouter(AuthRepository authRepository) => GoRouter(
           builder: (context, __) => OnboardingScreen(
             onDone: () async {
               await context.read<LocalStoreService>().markOnboardingSeen();
-              if (context.mounted) context.go(Routes.login);
+              if (context.mounted) context.go(Routes.welcome);
             },
           ),
         ),
         GoRoute(
+          path: Routes.welcome,
+          builder: (_, __) => const WelcomeScreen(),
+        ),
+        GoRoute(
           path: Routes.login,
-          builder: (context, __) => LoginScreen(
-              viewModel: LoginViewModel(authRepository: context.read())),
+          builder: (context, state) => LoginScreen(
+            viewModel: LoginViewModel(authRepository: context.read()),
+            mode: state.uri.queryParameters['mode'],
+          ),
         ),
         GoRoute(
           path: '${Routes.product}/:slug',
@@ -127,9 +134,14 @@ Future<String?> _redirect(BuildContext context, GoRouterState state) async {
     return loc == Routes.onboarding ? null : Routes.onboarding;
   }
   if (!loggedIn) {
-    return loc == Routes.login ? null : Routes.login;
+    // Ecran d'accueil (choix creer un compte / se connecter) par defaut ;
+    // on laisse aussi passer la page de connexion.
+    if (loc == Routes.welcome || loc == Routes.login) return null;
+    return Routes.welcome;
   }
-  if (loc == Routes.login || loc == Routes.onboarding) {
+  if (loc == Routes.login ||
+      loc == Routes.onboarding ||
+      loc == Routes.welcome) {
     return Routes.home;
   }
   return null;

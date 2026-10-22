@@ -95,10 +95,18 @@ void showAppSnack(BuildContext context, String message, {bool success = false}) 
   m.clearSnackBars();
   m.showSnackBar(
     SnackBar(
-      content: Text(message),
+      // Texte blanc explicite : le fond est sombre (ink) ou vert (mint), le
+      // texte par defaut pouvait apparaitre noir sur fond sombre.
+      content: Text(
+        message,
+        style: const TextStyle(
+          color: AppColors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
       behavior: SnackBarBehavior.floating,
       backgroundColor: success ? AppColors.mint : AppColors.ink,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 2200),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
   );
